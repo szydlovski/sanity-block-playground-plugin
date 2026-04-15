@@ -1,5 +1,5 @@
 {
-  "name": "sanity-plugin-block-playground",
+  "name": "@pipeville/sanity-block-playground-plugin",
   "version": "0.1.0",
   "description": "Sanity Studio block playground plugin",
   "license": "MIT",
