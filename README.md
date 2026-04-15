@@ -1,4 +1,4 @@
-# sanity-plugin-block-playground
+# @pipeville/sanity-plugin-block-playground
 
 Source for this package lives in the [`sanity-block-playground-plugin`](https://github.com/pipeville/sanity-block-playground-plugin) repository (not a monorepo). Releases are published to npm from Git tags via GitHub Actions.
 
@@ -7,7 +7,7 @@ A Sanity Studio tool for previewing and editing section/block props in one place
 ## Install
 
 ```bash
-pnpm add sanity-plugin-block-playground
+pnpm add @pipeville/sanity-plugin-block-playground
 ```
 
 Peer dependencies are required in your Studio app:
