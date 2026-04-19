@@ -1,17 +1,9 @@
-import type { ComponentType } from "react";
+import type { ComponentType, LazyExoticComponent } from "react";
 
-export interface BlockEntry {
-  /** Unique key, matches `?block=` (e.g. Sanity section `_type`). */
-  name: string;
-  /** Display name in the sidebar. */
-  label: string;
-  /** Sidebar grouping bucket. */
-  category?: string;
-  /** Whether this section has a registered schema definition. */
-  hasSchema?: boolean;
-  /** How preview should render in Studio (direct client render vs server iframe). */
-  preview?: { mode: "client" | "server" };
-}
+/** Allowed in `clientBlocks`; includes `React.lazy` for code-split previews. */
+export type ClientPreviewComponent =
+  | ComponentType<Record<string, unknown>>
+  | LazyExoticComponent<ComponentType<Record<string, unknown>>>;
 
 export interface BlockFieldDefinition {
   /** Dotted path, e.g. `heading` or `link.externalUrl`. */
@@ -27,38 +19,88 @@ export interface BlockStory {
   id: string;
   /** Story label shown in the props panel. */
   label: string;
-  /** Props object applied to the preview/form. */
+  /** Props object applied to the preview/form (replaces full state when selected). */
   props: Record<string, unknown>;
 }
 
+/** Shared fields for client and server block entries (no component on server metadata). */
+export interface BlockDefinitionBase {
+  name: string;
+  label: string;
+  category?: string;
+  /** Whether this section has a registered schema definition (informational). */
+  hasSchema?: boolean;
+  defaultProps?: Record<string, unknown>;
+  stories?: BlockStory[];
+  /** Drives the Fields tab; when empty, only Full JSON is available. */
+  fields?: BlockFieldDefinition[];
+}
+
+/** Studio-safe: includes a client-rendered preview component (no server-only imports). */
+export interface ClientBlockDefinition extends BlockDefinitionBase {
+  component: ClientPreviewComponent;
+}
+
+/**
+ * Metadata-only block for iframe/server preview. Do not import server components here —
+ * resolve components in the Next (or app) route using `@pipeville/sanity-block-playground-plugin/preview`.
+ */
+export interface ServerBlockMetadata extends BlockDefinitionBase {
+  // no `component`; render is always server/iframe
+}
+
+/** Sidebar + tool: discriminated by how preview is produced. */
+export interface UnifiedBlockEntry {
+  name: string;
+  label: string;
+  category?: string;
+  hasSchema?: boolean;
+  render: "client" | "server";
+}
+
+/**
+ * Options for `blockPlaygroundPlugin`. Use `clientBlocks` for in-Studio preview and
+ * `serverBlocks` for iframe preview; both lists appear as one in the sidebar.
+ */
 export interface BlockPlaygroundOptions {
   title?: string;
-  /** Returns registered blocks; the plugin never imports app sections. */
-  getBlocks: () => BlockEntry[];
+  clientBlocks: ClientBlockDefinition[];
+  serverBlocks?: ServerBlockMetadata[];
+  /** Order category headings; unspecified categories sort alphabetically after these. */
+  categoryOrder?: string[];
   /**
-   * Optional: default props when switching blocks (e.g. from mock files).
-   * If omitted, the preview route should merge URL props with its own defaults.
+   * Pathname for the iframe preview route, e.g. `/block-preview`.
+   * Combined with `serializeBlockPreviewSearchParams` from the `preview` entry.
+   * Ignored if `buildServerPreviewUrl` is set.
    */
-  getDefaultProps?: (blockName: string) => Record<string, unknown>;
+  serverPreviewBasePath?: string;
   /**
-   * Optional: named story presets for the selected section.
-   * When missing, playground falls back to `getDefaultProps`.
+   * Full control over the iframe URL. When omitted, `serverPreviewBasePath` is used
+   * with the canonical query string from `serializeBlockPreviewSearchParams`.
    */
-  getStories?: (blockName: string) => BlockStory[];
-  /**
-   * Optional: form fields for the props panel. When missing or returning `[]`,
-   * only the raw JSON editor is shown.
-   */
-  getFieldDefinitions?: (blockName: string) => BlockFieldDefinition[];
-  /** Resolves a client-safe preview component for a selected block. */
-  resolveComponent?: (
-    blockName: string,
-  ) => ComponentType<Record<string, unknown>> | null;
-  /** Builds iframe URL for blocks rendered in `preview.mode = "server"`. */
   buildServerPreviewUrl?: (args: {
     block: string;
     props: Record<string, unknown>;
   }) => string | null;
   /** Optional named schema type map used by the playground field renderer. */
   namedSchemaTypes?: Record<string, unknown>;
+}
+
+/**
+ * Normalized options passed through React context. Most callers only need
+ * {@link BlockPlaygroundOptions}; this type is exposed for advanced tooling.
+ */
+export interface ResolvedBlockPlaygroundOptions {
+  title?: string;
+  blocks: UnifiedBlockEntry[];
+  categoryOrder?: string[];
+  namedSchemaTypes?: Record<string, unknown>;
+  getDefaultProps: (blockName: string) => Record<string, unknown>;
+  getStories: (blockName: string) => BlockStory[];
+  getFieldDefinitions: (blockName: string) => BlockFieldDefinition[];
+  resolveComponent: (blockName: string) => ClientPreviewComponent | null;
+  buildServerPreviewUrl?: (args: {
+    block: string;
+    props: Record<string, unknown>;
+  }) => string | null;
 }

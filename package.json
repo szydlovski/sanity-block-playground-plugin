@@ -1,8 +1,21 @@
 {
   "name": "@pipeville/sanity-block-playground-plugin",
-  "version": "0.3.0",
-  "description": "Sanity Studio block playground plugin",
+  "version": "0.4.0",
+  "description": "Block Playground tool for Sanity Studio — preview and edit section/block props (client or Next.js iframe).",
   "license": "MIT",
+  "homepage": "https://www.npmjs.com/package/@pipeville/sanity-block-playground-plugin",
+  "bugs": {
+    "url": "https://github.com/pipeville/sanity-block-playground-plugin/issues"
+  },
+  "keywords": [
+    "sanity",
+    "sanity-plugin",
+    "cms",
+    "studio",
+    "blocks",
+    "preview",
+    "nextjs"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/pipeville/sanity-block-playground-plugin.git"
@@ -12,7 +25,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "readme-assets"
   ],
   "exports": {
     ".": {
@@ -22,6 +36,10 @@
     "./define-section-stories": {
       "types": "./dist/define-section-stories.d.ts",
       "import": "./dist/define-section-stories.js"
+    },
+    "./preview": {
+      "types": "./dist/preview.d.ts",
+      "import": "./dist/preview.js"
     }
   },
   "scripts": {

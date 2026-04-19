@@ -2,15 +2,17 @@
 
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
-import type { BlockPlaygroundOptions } from "../types";
+import type { ResolvedBlockPlaygroundOptions } from "../types";
 
-const BlockPlaygroundContext = createContext<BlockPlaygroundOptions | null>(null);
+const BlockPlaygroundContext = createContext<ResolvedBlockPlaygroundOptions | null>(
+  null,
+);
 
 export function BlockPlaygroundProvider({
   options,
   children,
 }: {
-  options: BlockPlaygroundOptions;
+  options: ResolvedBlockPlaygroundOptions;
   children: ReactNode;
 }) {
   return (
@@ -20,7 +22,7 @@ export function BlockPlaygroundProvider({
   );
 }
 
-export function useBlockPlaygroundOptions(): BlockPlaygroundOptions {
+export function useBlockPlaygroundOptions(): ResolvedBlockPlaygroundOptions {
   const context = useContext(BlockPlaygroundContext);
   if (!context) {
     throw new Error("useBlockPlaygroundOptions must be used within BlockPlaygroundProvider");

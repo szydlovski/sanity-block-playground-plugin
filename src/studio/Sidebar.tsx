@@ -1,20 +1,27 @@
 import { Box, Card, Flex, Stack, Text } from "@sanity/ui";
-import type { BlockEntry } from "../types";
+import type { UnifiedBlockEntry } from "../types";
 
 interface SidebarProps {
-  blocks: BlockEntry[];
+  blocks: UnifiedBlockEntry[];
+  categoryOrder?: string[];
   selected: string | null;
   onSelect: (name: string) => void;
 }
 
-export function Sidebar({ blocks, selected, onSelect }: SidebarProps) {
-  const preferredOrder = ["Hero", "Generic", "Concerts", "Artists"];
+export function Sidebar({
+  blocks,
+  categoryOrder: categoryOrderOption,
+  selected,
+  onSelect,
+}: SidebarProps) {
   const discoveredCategories = Array.from(
     new Set(blocks.map((block) => block.category ?? "Generic")),
-  );
+  ).sort((a, b) => a.localeCompare(b));
+
+  const preferred = categoryOrderOption ?? [];
   const categoryOrder = [
-    ...preferredOrder.filter((category) => discoveredCategories.includes(category)),
-    ...discoveredCategories.filter((category) => !preferredOrder.includes(category)),
+    ...preferred.filter((category) => discoveredCategories.includes(category)),
+    ...discoveredCategories.filter((category) => !preferred.includes(category)),
   ];
 
   const grouped = categoryOrder.map((category) => ({

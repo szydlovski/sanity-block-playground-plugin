@@ -2,18 +2,19 @@
 
 import {
   createElement,
+  Suspense,
   useCallback,
   useMemo,
   useState,
 } from "react";
 import { Box, Button, Card, Flex, Text } from "@sanity/ui";
-import type { BlockPlaygroundOptions } from "../types";
+import type { ResolvedBlockPlaygroundOptions } from "../types";
 import { PropsPanel } from "./PropsPanel";
 import { Sidebar } from "./Sidebar";
 import { ViewportSwitcher } from "./ViewportSwitcher";
 
 interface BlockPlaygroundToolProps {
-  options: BlockPlaygroundOptions;
+  options: ResolvedBlockPlaygroundOptions;
 }
 
 function cloneProps(props: Record<string, unknown>): Record<string, unknown> {
@@ -24,11 +25,11 @@ function cloneProps(props: Record<string, unknown>): Record<string, unknown> {
 }
 
 export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
-  const blocks = useMemo(() => options.getBlocks(), [options]);
+  const blocks = useMemo(() => options.blocks, [options]);
 
   const getStories = useCallback(
     (name: string | null) => {
-      if (!name || !options.getStories) return [];
+      if (!name) return [];
       return options.getStories(name);
     },
     [options],
@@ -36,7 +37,7 @@ export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
 
   const getDefault = useCallback(
     (name: string | null) => {
-      if (!name || !options.getDefaultProps) return {};
+      if (!name) return {};
       return cloneProps(options.getDefaultProps(name));
     },
     [options],
@@ -61,7 +62,7 @@ export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
   const [viewportWidth, setViewportWidth] = useState("100%");
 
   const fieldDefinitions = useMemo(() => {
-    if (!selectedName || !options.getFieldDefinitions) return [];
+    if (!selectedName) return [];
     return options.getFieldDefinitions(selectedName);
   }, [selectedName, options]);
 
@@ -75,12 +76,12 @@ export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
     [blocks, selectedName],
   );
 
-  const isServerPreview = selectedBlock?.preview?.mode === "server";
+  const isServerPreview = selectedBlock?.render === "server";
 
   const PreviewComponent = useMemo(() => {
     if (!selectedName) return null;
     if (isServerPreview) return null;
-    return options.resolveComponent?.(selectedName) ?? null;
+    return options.resolveComponent(selectedName);
   }, [selectedName, isServerPreview, options]);
 
   const serverPreviewSrc = useMemo(() => {
@@ -119,6 +120,30 @@ export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
     },
     [stories],
   );
+
+  if (blocks.length === 0) {
+    return (
+      <Box
+        flex={1}
+        padding={5}
+        style={{
+          width: "100%",
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          boxSizing: "border-box",
+        }}
+      >
+        <Text muted size={1} style={{ maxWidth: 360, textAlign: "center" }}>
+          No blocks are registered. Add entries to{" "}
+          <code>clientBlocks</code> and/or <code>serverBlocks</code> in the
+          plugin options.
+        </Text>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -169,6 +194,7 @@ export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
           >
             <Sidebar
               blocks={blocks}
+              categoryOrder={options.categoryOrder}
               selected={selectedName}
               onSelect={handleSelectBlock}
             />
@@ -273,13 +299,31 @@ export function BlockPlaygroundTool({ options }: BlockPlaygroundToolProps) {
                         background: "var(--card-bg-color)",
                       }}
                     />
-                  ) : PreviewComponent ? (
-                    <Box className="bg-warm text-charcoal antialiased">
-                      {createElement(PreviewComponent, {
-                        key: selectedName ?? "none",
-                        ...previewProps,
-                      })}
+                  ) : isServerPreview && !serverPreviewSrc ? (
+                    <Box padding={4}>
+                      <Text muted size={1}>
+                        Server preview is not configured. Set{" "}
+                        <code>serverPreviewBasePath</code> or{" "}
+                        <code>buildServerPreviewUrl</code> in the plugin options.
+                      </Text>
                     </Box>
+                  ) : PreviewComponent ? (
+                    <Suspense
+                      fallback={
+                        <Box padding={4}>
+                          <Text muted size={1}>
+                            Loading preview…
+                          </Text>
+                        </Box>
+                      }
+                    >
+                      <Box className="bg-warm text-charcoal antialiased">
+                        {createElement(PreviewComponent, {
+                          key: selectedName ?? "none",
+                          ...previewProps,
+                        })}
+                      </Box>
+                    </Suspense>
                   ) : (
                     <Box padding={4}>
                       <Text muted size={1}>
